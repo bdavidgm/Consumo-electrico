@@ -68,6 +68,7 @@ dependencies {
     implementation(libs.androidx.room.ktx)
     implementation(libs.androidx.runtime)
     implementation(libs.material3)
+    implementation(libs.androidx.datastore.core)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
@@ -88,7 +89,7 @@ dependencies {
     implementation("androidx.security:security-crypto:1.1.0")
 
     // Hilt
-    implementation("com.google.dagger:hilt-android:2.57.1")
+    implementation("com.google.dagger:hilt-android:2.57.2")
     ksp("com.google.dagger:hilt-android-compiler:2.57.1")
 
     //material icons

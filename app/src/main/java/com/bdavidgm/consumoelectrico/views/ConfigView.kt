@@ -53,6 +53,7 @@ import com.bdavidgm.consumoelectrico.datastore.ViewMode
 import com.bdavidgm.consumoelectrico.viewmodels.SettingsViewModel
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -196,7 +197,7 @@ private fun SettingsContent(
             )
         }
 
-        Divider()
+        HorizontalDivider()
 
         // Sección: Credenciales del Remitente
         Text(
@@ -231,7 +232,7 @@ private fun SettingsContent(
             Text("Guardar Credenciales")
         }
 
-        Divider()
+        HorizontalDivider()
 
         // Sección: Modo de Visualización
         Text(

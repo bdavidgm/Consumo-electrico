@@ -1,6 +1,9 @@
 package com.bdavidgm.consumoelectrico.di
 
 import android.content.Context
+import androidx.datastore.core.DataStore
+import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.preferencesDataStore
 import androidx.room.Room
 import com.bdavidgm.consumoelectrico.room.ConsumoDao
 import com.bdavidgm.consumoelectrico.room.ConsumoDataBase
@@ -11,6 +14,10 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import javax.inject.Singleton
 
+private const val SETTINGS_DATASTORE_NAME = "app_settings"
+
+// Define a top-level property for the delegate (optional, for direct usage)
+val Context.settingsDataStore: DataStore<Preferences> by preferencesDataStore(name = SETTINGS_DATASTORE_NAME)
 
 @Module
 @InstallIn(SingletonComponent::class)
@@ -30,5 +37,14 @@ object AppModule {
             name = "Consumo"
         ).build()
     }
+
+
+    @Provides
+    @Singleton // Ensures only one DataStore instance exists[citation:6]
+    fun provideSettingsDataStore(@ApplicationContext context: Context): DataStore<Preferences> {
+        // Use the delegate or create it explicitly
+        return context.settingsDataStore
+    }
+
 
 }

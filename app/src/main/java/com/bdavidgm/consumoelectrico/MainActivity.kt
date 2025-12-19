@@ -24,8 +24,8 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             ConsumoelectricoTheme {
-                val st : SettingsViewModel by viewModels()
-                SettingsScreen(st)
+               val st : SettingsViewModel by viewModels()
+               SettingsScreen(st)
             }
         }
     }
