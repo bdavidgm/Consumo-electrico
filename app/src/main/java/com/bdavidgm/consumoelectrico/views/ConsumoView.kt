@@ -69,7 +69,7 @@ fun screen1(padd: PaddingValues,ConsumoVM: ConsumoViewModel )
         OutlinedTextField(
             value = lectura,
             onValueChange = {lectura = it; },
-            label = { Text("Precio producto") },
+            label = { Text("Lectura del contador") },
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
             modifier = Modifier
                 .fillMaxWidth()

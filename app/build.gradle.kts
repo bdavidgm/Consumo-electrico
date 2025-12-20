@@ -95,4 +95,10 @@ dependencies {
     //material icons
     implementation("androidx.compose.material:material-icons-core:1.7.8")
     implementation("androidx.compose.material:material-icons-extended:1.7.8")
+
+    //room
+    val room_version = "2.8.4" // Usa la última versión estable disponible
+    implementation("androidx.room:room-runtime:$room_version")
+    implementation("androidx.room:room-ktx:$room_version") // Opcional: para soporte de corrutinas
+    ksp("androidx.room:room-compiler:$room_version")
 }
