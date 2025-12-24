@@ -6,6 +6,7 @@ import com.bdavidgm.consumoelectrico.datastore.SettingsRepository
 import com.bdavidgm.consumoelectrico.datastore.SettingsUiState
 import com.bdavidgm.consumoelectrico.datastore.ViewMode
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -44,7 +45,7 @@ class SettingsViewModel @Inject constructor(private val repository: SettingsRepo
 
     // Observar cambios en los settings del repository
     private fun loadSettings() {
-        viewModelScope.launch {
+        viewModelScope.launch(Dispatchers.IO) {
             repository.settingsFlow
                 .collect { settings ->
                     _uiState.value = _uiState.value.copy(
@@ -125,7 +126,7 @@ class SettingsViewModel @Inject constructor(private val repository: SettingsRepo
     }
 
     fun setViewMode(viewMode: ViewMode) {
-        viewModelScope.launch {
+        viewModelScope.launch(Dispatchers.IO) {
             try {
                 repository.setViewMode(viewMode)
             } catch (e: Exception) {

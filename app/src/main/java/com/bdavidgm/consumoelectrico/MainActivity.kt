@@ -29,8 +29,7 @@ class MainActivity : ComponentActivity() {
                val st : SettingsViewModel by viewModels()
                val cvm : ConsumoViewModel by viewModels()
               // SettingsScreen(st)
-                ConsumoView(cvm)
-
+                ConsumoView(cvm, st)
             }
         }
     }

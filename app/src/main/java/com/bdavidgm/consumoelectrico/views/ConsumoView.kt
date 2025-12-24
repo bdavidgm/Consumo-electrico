@@ -38,29 +38,45 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import com.bdavidgm.consumoelectrico.model.Consumo
+import androidx.lifecycle.ViewModel
+import com.bdavidgm.consumoelectrico.datastore.SettingsRepository
 import com.bdavidgm.consumoelectrico.viewmodels.ConsumoViewModel
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.asStateFlow
+import com.bdavidgm.consumoelectrico.viewmodels.SettingsViewModel
 
 @Composable
-fun ConsumoView(ConsumoVM: ConsumoViewModel) {
-
+fun ConsumoView(consumoVM: ConsumoViewModel, settingsVM: SettingsViewModel) {
+    // Opción 1: Pasar screen1 directamente
+    scaffoldView(
+        title = "Consumo Eléctrico",
+        viewModel = consumoVM,
+        view = { paddingValues, viewModel ->
+            // Convertimos ViewModel a ConsumoViewModel (es seguro ya que sabemos el tipo)
+            screen1(
+                paddingValues = 15.dp,
+                consumoVM = viewModel as ConsumoViewModel,
+                settingsVM
+            )
+        }
+    )
+    //
 }
 
 
 @Composable
-fun screen1(padd: PaddingValues,ConsumoVM: ConsumoViewModel )
+fun screen1(paddingValues: Dp, consumoVM: ConsumoViewModel, settingsVM: SettingsViewModel)
 {
-    val listadoConsumo by ConsumoVM.listadoConsumo.collectAsState()
-    var lectura : String = ""
+    val listadoConsumo by consumoVM.listadoConsumo.collectAsState()
+    var lectura : String by rememberSaveable { mutableStateOf("") }
+    //settingsVM.
     val headers: List<String> = emptyList()
     val rows: List<List<String>> = emptyList()
 
+
     Column( modifier = Modifier
         .fillMaxSize()
-        .padding(padd)
+        .padding(top = 100.dp)
         .verticalScroll(rememberScrollState()),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(16.dp)
@@ -162,8 +178,8 @@ fun BorderedTable(headers: List<String>, rows: List<List<String>>) {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun scaffoldView(title:String, view: @Composable (paddin:PaddingValues) -> Unit){
-
+fun scaffoldView(title: String, viewModel: ViewModel,view: @Composable (padding: PaddingValues, VM: ViewModel) -> Unit )
+{
     //var presses by remember{ mutableIntStateOf(0) }
     val scrollState = rememberScrollState()
 
@@ -195,7 +211,7 @@ fun scaffoldView(title:String, view: @Composable (paddin:PaddingValues) -> Unit)
                 }
             )
         },
-        bottomBar = {
+        /*bottomBar = {
             BottomAppBar(
                 containerColor = colorResource(id = R.color.white),
                 contentColor = MaterialTheme.colorScheme.primary,
@@ -220,11 +236,11 @@ fun scaffoldView(title:String, view: @Composable (paddin:PaddingValues) -> Unit)
                     // RoundAddButton(onClick = {addAccountVM.addAccount(itemList) },50, icon = Icons.Outlined.Check)
                 }
             }
-        },
+        },*/
 
         ) { innerPadding ->
 
-        view(innerPadding);
+        view(innerPadding,viewModel);
 
 
     }
