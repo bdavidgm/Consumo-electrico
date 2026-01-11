@@ -28,8 +28,8 @@ class MainActivity : ComponentActivity() {
             ConsumoelectricoTheme {
                val st : SettingsViewModel by viewModels()
                val cvm : ConsumoViewModel by viewModels()
-              // SettingsScreen(st)
-                ConsumoView(cvm, st)
+               SettingsScreen(st)
+                //ConsumoView(cvm, st)
             }
         }
     }

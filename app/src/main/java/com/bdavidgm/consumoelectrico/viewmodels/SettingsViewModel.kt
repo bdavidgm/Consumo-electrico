@@ -11,10 +11,6 @@ import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
-
-class Config {
-}
-
 // Data class para las configuraciones
 
 @HiltViewModel

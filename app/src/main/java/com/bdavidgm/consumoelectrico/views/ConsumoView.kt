@@ -69,9 +69,10 @@ fun screen1(paddingValues: Dp, consumoVM: ConsumoViewModel, settingsVM: Settings
 {
     val listadoConsumo by consumoVM.listadoConsumo.collectAsState()
     var lectura : String by rememberSaveable { mutableStateOf("") }
-    //settingsVM.
+    //val settings : AppSettings = settingsVM.
     val headers: List<String> = emptyList()
     val rows: List<List<String>> = emptyList()
+
 
 
     Column( modifier = Modifier
