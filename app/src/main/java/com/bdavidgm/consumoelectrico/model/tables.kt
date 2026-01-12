@@ -17,6 +17,12 @@ data class Consumo(
     @ColumnInfo(name = "mensual")
      val mensual: Double = 0.0,
 
+    @ColumnInfo(name = "lectura")
+    val lectura: Double = 0.0,
+
+    @ColumnInfo(name = "fechaCreacion")
+    val fechaCreacion: Long = System.currentTimeMillis(),
+
 @ColumnInfo(name = "dia")
 val dia: Int = 0,
 

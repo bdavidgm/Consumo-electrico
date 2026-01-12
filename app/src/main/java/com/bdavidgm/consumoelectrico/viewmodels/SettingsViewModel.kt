@@ -11,11 +11,8 @@ import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
-// Data class para las configuraciones
-
 @HiltViewModel
-class SettingsViewModel @Inject constructor(private val repository: SettingsRepository): ViewModel()
-{
+class SettingsViewModel @Inject constructor(private val repository: SettingsRepository) : ViewModel() {
 
     // Estado principal de la UI
     private val _uiState = MutableStateFlow(SettingsUiState(isLoading = true))
@@ -30,6 +27,14 @@ class SettingsViewModel @Inject constructor(private val repository: SettingsRepo
 
     private val _senderPasswordInput = MutableStateFlow("")
     val senderPasswordInput: StateFlow<String> = _senderPasswordInput.asStateFlow()
+
+    // Estado para controlar visibilidad de contraseña guardada
+    private val _showSavedPassword = MutableStateFlow(false)
+    val showSavedPassword: StateFlow<Boolean> = _showSavedPassword.asStateFlow()
+
+    // Estado para controlar visibilidad de contraseña en campo de entrada
+    private val _showInputPassword = MutableStateFlow(false)
+    val showInputPassword: StateFlow<Boolean> = _showInputPassword.asStateFlow()
 
     // Eventos para UI (Snackbars, etc.)
     private val _snackbarMessage = MutableSharedFlow<String>()
@@ -47,7 +52,12 @@ class SettingsViewModel @Inject constructor(private val repository: SettingsRepo
                     _uiState.value = _uiState.value.copy(
                         reportEmails = settings.reportEmails,
                         senderEmail = settings.senderEmail,
-                        senderPassword = "", // Por seguridad no mostramos la contraseña
+                        // Mostrar asteriscos si hay contraseña guardada
+                        senderPassword = if (settings.senderPassword.isNotEmpty()) {
+                            "••••••••"
+                        } else {
+                            ""
+                        },
                         viewMode = settings.viewMode,
                         isLoading = false
                     )
@@ -68,6 +78,23 @@ class SettingsViewModel @Inject constructor(private val repository: SettingsRepo
 
     fun onSenderPasswordInputChanged(password: String) {
         _senderPasswordInput.value = password
+    }
+
+    // Alternar visibilidad de contraseña guardada
+    fun toggleSavedPasswordVisibility() {
+        _showSavedPassword.value = !_showSavedPassword.value
+        // Opcional: Ocultar automáticamente después de 10 segundos
+        if (_showSavedPassword.value) {
+            viewModelScope.launch {
+                kotlinx.coroutines.delay(10000)
+                _showSavedPassword.value = false
+            }
+        }
+    }
+
+    // Alternar visibilidad de contraseña en campo de entrada
+    fun toggleInputPasswordVisibility() {
+        _showInputPassword.value = !_showInputPassword.value
     }
 
     fun addReportEmail() {
@@ -108,7 +135,8 @@ class SettingsViewModel @Inject constructor(private val repository: SettingsRepo
                     try {
                         repository.saveSenderCredentials(email, password)
                         _senderPasswordInput.value = "" // Limpiar campo después de guardar
-                        showSnackbar("Credenciales guardadas y encriptadas")
+                        _showInputPassword.value = false // Ocultar contraseña
+                        showSnackbar("Credenciales guardadas de forma segura")
                     } catch (e: Exception) {
                         showSnackbar("Error al guardar credenciales: ${e.message}")
                     }
@@ -131,10 +159,67 @@ class SettingsViewModel @Inject constructor(private val repository: SettingsRepo
         }
     }
 
+    // Nuevo método para obtener la contraseña actual (para uso interno)
+    suspend fun getCurrentPassword(): String {
+        return try {
+            repository.getCurrentSettings().senderPassword
+        } catch (e: Exception) {
+            ""
+        }
+    }
+
+    // Método para verificar si hay contraseña guardada
+    fun hasPassword(): Boolean {
+        return repository.hasPassword()
+    }
+
+    // Método para eliminar la contraseña guardada
+    fun clearPassword() {
+        viewModelScope.launch {
+            try {
+                repository.clearPassword()
+                showSnackbar("Contraseña eliminada de forma segura")
+                // Actualizar UI State para reflejar el cambio
+                _uiState.value = _uiState.value.copy(
+                    senderPassword = ""
+                )
+            } catch (e: Exception) {
+                showSnackbar("Error al eliminar contraseña: ${e.message}")
+            }
+        }
+    }
+
+    // Método para guardar todos los settings
+    suspend fun saveAllSettings(settings: com.bdavidgm.consumoelectrico.datastore.AppSettings) {
+        try {
+            repository.saveSettings(settings)
+        } catch (e: Exception) {
+            throw e
+        }
+    }
+
     private fun showSnackbar(message: String) {
         viewModelScope.launch {
             _snackbarMessage.emit(message)
         }
     }
-}
 
+    // Propiedad computada para obtener la contraseña a mostrar
+    val displayedPassword: StateFlow<String> = combine(
+        _uiState,
+        _showSavedPassword
+    ) { state, show ->
+        if (state.senderPassword.isNotEmpty() && show) {
+            // Si hay contraseña y se debe mostrar, obtenerla del repositorio
+            // Esto es una simplificación - en la práctica, necesitarías obtenerla de manera asíncrona
+            // O mantener una copia en el ViewModel
+            "••••••••" // Placeholder - implementar lógica real según necesidades
+        } else {
+            state.senderPassword
+        }
+    }.stateIn(
+        viewModelScope,
+        SharingStarted.WhileSubscribed(5000),
+        ""
+    )
+}

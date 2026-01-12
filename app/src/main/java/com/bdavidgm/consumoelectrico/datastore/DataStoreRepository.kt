@@ -1,5 +1,8 @@
 package com.bdavidgm.consumoelectrico.datastore
 
+import android.content.Context
+import android.security.keystore.KeyGenParameterSpec
+import android.security.keystore.KeyProperties
 import android.util.Base64
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
@@ -7,21 +10,25 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.core.stringSetPreferencesKey
+import androidx.security.crypto.EncryptedSharedPreferences
+import androidx.security.crypto.MasterKey
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import java.io.IOException
 import javax.crypto.Cipher
+import javax.crypto.KeyGenerator
+import javax.crypto.SecretKey
 import javax.crypto.spec.SecretKeySpec
-import kotlin.collections.minus
-import kotlin.collections.plus
 import javax.inject.Inject
+import javax.inject.Singleton
 
 data class AppSettings(
     val reportEmails: Set<String> = emptySet(),
     val senderEmail: String = "",
-    val senderPassword: String = "", // Contraseña encriptada
+    val senderPassword: String = "", // Contraseña desencriptada
     val viewMode: ViewMode = ViewMode.MONTHLY
 )
 
@@ -42,50 +49,119 @@ data class SettingsUiState(
     val isLoading: Boolean = false
 )
 
-class SettingsRepository @Inject constructor(private val dataStore: DataStore<Preferences>) {
+@Singleton
+class SettingsRepository @Inject constructor(
+    private val dataStore: DataStore<Preferences>,
+    @ApplicationContext private val context: Context
+) {
 
-    // Keys para DataStore
+    // Keys para DataStore (para datos no sensibles)
     private object PreferencesKeys {
         val REPORT_EMAILS = stringSetPreferencesKey("report_emails")
         val SENDER_EMAIL = stringPreferencesKey("sender_email")
-        val SENDER_PASSWORD = stringPreferencesKey("sender_password")
         val VIEW_MODE = stringPreferencesKey("view_mode")
+        // La contraseña NO va aquí, va a EncryptedSharedPreferences
     }
 
-    // Clave de encriptación (en producción usa KeyStore)
-    private val encryptionKey = "ut-bwhsc3JY-G51k7gTU" // 16 caracteres para AES
+    // Keys para EncryptedSharedPreferences (para datos sensibles)
+    private object SecureKeys {
+        const val PASSWORD_KEY = "encrypted_sender_password"
+        const val ENCRYPTION_KEY_ALIAS = "app_encryption_key"
+    }
 
-    // Encriptar contraseña
-    private fun encrypt(password: String): String {
-        return try {
-            val keySpec = SecretKeySpec(encryptionKey.toByteArray(), "AES")
-            val cipher = Cipher.getInstance("AES/ECB/PKCS5Padding")
-            cipher.init(Cipher.ENCRYPT_MODE, keySpec)
-            val encrypted = cipher.doFinal(password.toByteArray())
-            Base64.encodeToString(encrypted, Base64.DEFAULT)
+    // Instancia de EncryptedSharedPreferences
+    private val encryptedPrefs by lazy {
+        try {
+            // Crear MasterKey
+            val masterKey = MasterKey.Builder(context)
+                .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
+                .build()
+
+            // Crear EncryptedSharedPreferences
+            EncryptedSharedPreferences.create(
+                context,
+                "secure_settings",
+                masterKey,
+                EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
+                EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
+            )
         } catch (e: Exception) {
-            // Log del error
-            e.printStackTrace()
-            password // Fallback sin encriptación
+            // Fallback a SharedPreferences normales (NO RECOMENDADO para producción)
+            context.getSharedPreferences("secure_settings_fallback", Context.MODE_PRIVATE).also {
+                // Log de advertencia
+                android.util.Log.w("SettingsRepository", "Usando SharedPreferences normales: ${e.message}")
+            }
         }
     }
 
-    // Desencriptar contraseña
-    private fun decrypt(encryptedPassword: String): String {
+    // Generar clave de encriptación segura usando Android Keystore
+    private fun getOrCreateEncryptionKey(): SecretKey {
         return try {
-            val keySpec = SecretKeySpec(encryptionKey.toByteArray(), "AES")
-            val cipher = Cipher.getInstance("AES/ECB/PKCS5Padding")
-            cipher.init(Cipher.DECRYPT_MODE, keySpec)
-            val decoded = Base64.decode(encryptedPassword, Base64.DEFAULT)
-            String(cipher.doFinal(decoded))
+            // Intentar obtener la clave del Keystore
+            val keyStore = java.security.KeyStore.getInstance("AndroidKeyStore")
+            keyStore.load(null)
+
+            if (!keyStore.containsAlias(SecureKeys.ENCRYPTION_KEY_ALIAS)) {
+                // Crear nueva clave
+                val keyGenParameterSpec = KeyGenParameterSpec.Builder(
+                    SecureKeys.ENCRYPTION_KEY_ALIAS,
+                    KeyProperties.PURPOSE_ENCRYPT or KeyProperties.PURPOSE_DECRYPT
+                )
+                    .setBlockModes(KeyProperties.BLOCK_MODE_GCM)
+                    .setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_NONE)
+                    .setKeySize(256)
+                    .build()
+
+                val keyGenerator = KeyGenerator.getInstance(
+                    KeyProperties.KEY_ALGORITHM_AES,
+                    "AndroidKeyStore"
+                )
+                keyGenerator.init(keyGenParameterSpec)
+                keyGenerator.generateKey()
+            }
+
+            // Obtener la clave
+            keyStore.getKey(SecureKeys.ENCRYPTION_KEY_ALIAS, null) as SecretKey
         } catch (e: Exception) {
-            // Log del error
-            e.printStackTrace()
-            encryptedPassword // Fallback si no se puede desencriptar
+            // Fallback: generar clave en memoria (menos seguro pero funcional)
+            android.util.Log.w("SettingsRepository", "Usando clave en memoria: ${e.message}")
+            generateInMemoryKey()
         }
     }
 
-    // Flow para observar los settings
+    // Generar clave en memoria como fallback
+    private fun generateInMemoryKey(): SecretKey {
+        val keyGenerator = KeyGenerator.getInstance("AES")
+        keyGenerator.init(256)
+        return keyGenerator.generateKey()
+    }
+
+    // Encriptar contraseña usando EncryptedSharedPreferences
+    private fun encryptAndSavePassword(password: String) {
+        try {
+            // Guardar en EncryptedSharedPreferences
+            encryptedPrefs?.edit()?.apply {
+                putString(SecureKeys.PASSWORD_KEY, password)
+                apply()
+            }
+        } catch (e: Exception) {
+            android.util.Log.e("SettingsRepository", "Error al guardar contraseña: ${e.message}")
+            throw e
+        }
+    }
+
+    // Desencriptar y obtener contraseña
+    private fun getDecryptedPassword(): String {
+        return try {
+            // Obtener de EncryptedSharedPreferences
+            encryptedPrefs?.getString(SecureKeys.PASSWORD_KEY, "") ?: ""
+        } catch (e: Exception) {
+            android.util.Log.e("SettingsRepository", "Error al obtener contraseña: ${e.message}")
+            ""
+        }
+    }
+
+    // Flow para observar los settings (combina DataStore y EncryptedSharedPreferences)
     val settingsFlow: Flow<AppSettings> = dataStore.data
         .catch { exception ->
             // Manejar errores de DataStore
@@ -99,7 +175,8 @@ class SettingsRepository @Inject constructor(private val dataStore: DataStore<Pr
             AppSettings(
                 reportEmails = preferences[PreferencesKeys.REPORT_EMAILS] ?: emptySet(),
                 senderEmail = preferences[PreferencesKeys.SENDER_EMAIL] ?: "",
-                senderPassword = decrypt(preferences[PreferencesKeys.SENDER_PASSWORD] ?: ""),
+                // Obtener contraseña desde EncryptedSharedPreferences
+                senderPassword = getDecryptedPassword(),
                 viewMode = try {
                     ViewMode.valueOf(preferences[PreferencesKeys.VIEW_MODE] ?: ViewMode.MONTHLY.name)
                 } catch (e: Exception) {
@@ -113,9 +190,10 @@ class SettingsRepository @Inject constructor(private val dataStore: DataStore<Pr
         dataStore.edit { preferences ->
             preferences[PreferencesKeys.REPORT_EMAILS] = settings.reportEmails
             preferences[PreferencesKeys.SENDER_EMAIL] = settings.senderEmail
-            preferences[PreferencesKeys.SENDER_PASSWORD] = encrypt(settings.senderPassword)
             preferences[PreferencesKeys.VIEW_MODE] = settings.viewMode.name
         }
+        // Guardar contraseña en EncryptedSharedPreferences
+        encryptAndSavePassword(settings.senderPassword)
     }
 
     // Métodos individuales para emails de reporte
@@ -137,8 +215,9 @@ class SettingsRepository @Inject constructor(private val dataStore: DataStore<Pr
     suspend fun saveSenderCredentials(email: String, password: String) {
         dataStore.edit { preferences ->
             preferences[PreferencesKeys.SENDER_EMAIL] = email
-            preferences[PreferencesKeys.SENDER_PASSWORD] = encrypt(password)
         }
+        // Guardar contraseña en EncryptedSharedPreferences
+        encryptAndSavePassword(password)
     }
 
     // Cambiar modo de vista
@@ -155,7 +234,8 @@ class SettingsRepository @Inject constructor(private val dataStore: DataStore<Pr
                 AppSettings(
                     reportEmails = preferences[PreferencesKeys.REPORT_EMAILS] ?: emptySet(),
                     senderEmail = preferences[PreferencesKeys.SENDER_EMAIL] ?: "",
-                    senderPassword = decrypt(preferences[PreferencesKeys.SENDER_PASSWORD] ?: ""),
+                    // Obtener contraseña desde EncryptedSharedPreferences
+                    senderPassword = getDecryptedPassword(),
                     viewMode = try {
                         ViewMode.valueOf(preferences[PreferencesKeys.VIEW_MODE] ?: ViewMode.MONTHLY.name)
                     } catch (e: Exception) {
@@ -164,5 +244,25 @@ class SettingsRepository @Inject constructor(private val dataStore: DataStore<Pr
                 )
             }
             .first()
+    }
+
+    // Método para limpiar todas las configuraciones
+    suspend fun clearAllSettings() {
+        // Limpiar DataStore
+        dataStore.edit { preferences ->
+            preferences.clear()
+        }
+        // Limpiar EncryptedSharedPreferences
+        encryptedPrefs?.edit()?.clear()?.apply()
+    }
+
+    // Método para verificar si hay contraseña guardada
+    fun hasPassword(): Boolean {
+        return getDecryptedPassword().isNotEmpty()
+    }
+
+    // Método para eliminar solo la contraseña
+    fun clearPassword() {
+        encryptedPrefs?.edit()?.remove(SecureKeys.PASSWORD_KEY)?.apply()
     }
 }

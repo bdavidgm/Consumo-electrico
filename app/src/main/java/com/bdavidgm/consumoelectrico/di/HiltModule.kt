@@ -2,8 +2,8 @@ package com.bdavidgm.consumoelectrico.di
 
 import android.content.Context
 import androidx.datastore.core.DataStore
-import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.preferencesDataStore
+import androidx.datastore.preferences.core.Preferences
 import androidx.room.Room
 import com.bdavidgm.consumoelectrico.room.ConsumoDao
 import com.bdavidgm.consumoelectrico.room.ConsumoDataBase
@@ -45,6 +45,13 @@ object AppModule {
         // Use the delegate or create it explicitly
         return context.settingsDataStore
     }
+
+   /* @Singleton
+    @Provides
+    fun provideDataStore(@ApplicationContext context: Context): DataStore<Preferences> {
+        return context.dataStore
+    }*/
+
 
 
 }

@@ -15,6 +15,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import com.bdavidgm.consumoelectrico.ui.theme.ConsumoelectricoTheme
 import com.bdavidgm.consumoelectrico.viewmodels.ConsumoViewModel
 import com.bdavidgm.consumoelectrico.viewmodels.SettingsViewModel
+import com.bdavidgm.consumoelectrico.views.ConsumoScreen
 import com.bdavidgm.consumoelectrico.views.ConsumoView
 import com.bdavidgm.consumoelectrico.views.SettingsScreen
 import dagger.hilt.android.AndroidEntryPoint
@@ -28,8 +29,10 @@ class MainActivity : ComponentActivity() {
             ConsumoelectricoTheme {
                val st : SettingsViewModel by viewModels()
                val cvm : ConsumoViewModel by viewModels()
-               SettingsScreen(st)
+               //SettingsScreen(st)
                 //ConsumoView(cvm, st)
+                ConsumoScreen(cvm, st)
+
             }
         }
     }
