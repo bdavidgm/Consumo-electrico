@@ -5,7 +5,7 @@ import androidx.room.Entity
 import androidx.room.PrimaryKey
 
 
-@Entity(tableName = "consumo")
+@Entity(tableName = "consumo_table")
 data class Consumo(
 
     @PrimaryKey(autoGenerate = true)
@@ -24,11 +24,11 @@ data class Consumo(
     val fechaCreacion: Long = System.currentTimeMillis(),
 
 @ColumnInfo(name = "dia")
-val dia: Int = 0,
+val dia: Long = 0,
 
 @ColumnInfo(name = "mes")
-val mes: Int = 0,
+val mes: Long = 0,
 
 @ColumnInfo(name = "anio")
-val anio: Int = 0
+val anio: Long = 0
 )
