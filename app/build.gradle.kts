@@ -40,6 +40,13 @@ android {
     buildFeatures {
         compose = true
     }
+    packaging {
+        resources {
+            excludes += "/META-INF/{AL2.0,LGPL2.1}"
+            excludes += "/META-INF/NOTICE.md"
+            excludes += "/META-INF/LICENSE.md"
+        }
+    }
 }
 
 configurations.all {
@@ -70,6 +77,8 @@ dependencies {
     implementation(libs.material3)
     implementation(libs.androidx.datastore.core)
     implementation(libs.androidx.foundation)
+    implementation(libs.androidx.navigation.compose)
+    implementation(libs.runtime)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
@@ -102,4 +111,8 @@ dependencies {
     implementation("androidx.room:room-runtime:$room_version")
     implementation("androidx.room:room-ktx:$room_version") // Opcional: para soporte de corrutinas
     ksp("androidx.room:room-compiler:$room_version")
+
+    // Para envío de correos
+    implementation("com.sun.mail:android-mail:1.6.7")
+    implementation("com.sun.mail:android-activation:1.6.7")
 }

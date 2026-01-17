@@ -10,10 +10,12 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Settings // <-- NUEVO ICONO
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -29,7 +31,8 @@ import kotlinx.coroutines.launch
 @Composable
 fun ConsumoScreen(
     consumoViewModel: ConsumoViewModel,
-    settingsViewModel: SettingsViewModel
+    settingsViewModel: SettingsViewModel,
+    onNavigateToSettings: () -> Unit // <-- NUEVO PARÁMETRO
 ) {
     var lecturaInput by remember { mutableStateOf("") }
     var showMonth by remember { mutableStateOf(true) }
@@ -40,6 +43,7 @@ fun ConsumoScreen(
     val successMessage by consumoViewModel.successMessage.collectAsState()
 
     val coroutineScope = rememberCoroutineScope()
+    val context = LocalContext.current
 
     // Obtener fecha actual
     val fechaActual = LocalDate.now()
@@ -62,10 +66,10 @@ fun ConsumoScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(horizontal = 8.dp, vertical = 4.dp),
+            .padding(start = 8.dp, end = 4.dp,top = 42.dp,bottom=32.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        // Header compacto
+        // Header compacto CON BOTÓN DE CONFIGURACIÓN
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -73,21 +77,40 @@ fun ConsumoScreen(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
+            // Título a la izquierda
             Text(
                 text = "📊 Consumo Eléctrico",
-                style = MaterialTheme.typography.titleMedium,
+                style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.SemiBold
             )
 
-            IconButton(
-                onClick = { showHelp = !showHelp },
-                modifier = Modifier.size(24.dp)
-            ) {
-                Icon(
-                    Icons.Default.Info,
-                    contentDescription = "Ayuda",
-                    modifier = Modifier.size(20.dp)
-                )
+            // Botones a la derecha: Configuración y Ayuda
+            Row {
+                // Botón de configuración (NUEVO)
+                IconButton(
+                    onClick = onNavigateToSettings, // <-- Navega a Settings
+                    modifier = Modifier.size(24.dp)
+                ) {
+                    Icon(
+                        Icons.Default.Settings,
+                        contentDescription = "Configuración",
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+
+                Spacer(modifier = Modifier.width(4.dp))
+
+                // Botón de ayuda (existente)
+                IconButton(
+                    onClick = { showHelp = !showHelp },
+                    modifier = Modifier.size(24.dp)
+                ) {
+                    Icon(
+                        Icons.Default.Info,
+                        contentDescription = "Ayuda",
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
             }
         }
 
@@ -98,7 +121,7 @@ fun ConsumoScreen(
                 text = {
                     Column {
                         Text("1. Ingresa la lectura ACTUAL del contador")
-                        Text("2. Sistema calcula:")
+                        Text("El sistema calcula:")
                         Spacer(modifier = Modifier.height(4.dp))
                         Text("• Consumo = Lectura actual - Lectura anterior")
                         Text("• Acumulado = Suma de consumos del mes")
@@ -220,7 +243,7 @@ fun ConsumoScreen(
 
                     Button(
                         onClick = {
-                            // TODO: Enviar reporte por correo
+                            consumoViewModel.enviarReportePorCorreo(context)
                         },
                         modifier = Modifier.weight(1f),
                         colors = ButtonDefaults.buttonColors(

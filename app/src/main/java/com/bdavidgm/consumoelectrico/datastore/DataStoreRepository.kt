@@ -140,12 +140,19 @@ class SettingsRepository @Inject constructor(
     private fun encryptAndSavePassword(password: String) {
         try {
             // Guardar en EncryptedSharedPreferences
-            encryptedPrefs?.edit()?.apply {
-                putString(SecureKeys.PASSWORD_KEY, password)
-                apply()
+            val prefs = encryptedPrefs
+            if (prefs != null) {
+                prefs.edit().apply {
+                    putString(SecureKeys.PASSWORD_KEY, password)
+                    apply()
+                }
+                android.util.Log.d("SettingsRepository", "Contraseña guardada correctamente: ***${password.length} caracteres***")
+            } else {
+                android.util.Log.e("SettingsRepository", "ERROR: encryptedPrefs es null, no se puede guardar la contraseña")
+                throw IllegalStateException("No se pudo inicializar EncryptedSharedPreferences")
             }
         } catch (e: Exception) {
-            android.util.Log.e("SettingsRepository", "Error al guardar contraseña: ${e.message}")
+            android.util.Log.e("SettingsRepository", "Error al guardar contraseña: ${e.message}", e)
             throw e
         }
     }
@@ -154,9 +161,17 @@ class SettingsRepository @Inject constructor(
     private fun getDecryptedPassword(): String {
         return try {
             // Obtener de EncryptedSharedPreferences
-            encryptedPrefs?.getString(SecureKeys.PASSWORD_KEY, "") ?: ""
+            val prefs = encryptedPrefs
+            if (prefs != null) {
+                val password = prefs.getString(SecureKeys.PASSWORD_KEY, "") ?: ""
+                android.util.Log.d("SettingsRepository", "Contraseña obtenida: ${if (password.isNotEmpty()) "***${password.length} caracteres***" else "VACÍA"}")
+                password
+            } else {
+                android.util.Log.e("SettingsRepository", "ERROR: encryptedPrefs es null, no se puede obtener la contraseña")
+                ""
+            }
         } catch (e: Exception) {
-            android.util.Log.e("SettingsRepository", "Error al obtener contraseña: ${e.message}")
+            android.util.Log.e("SettingsRepository", "Error al obtener contraseña: ${e.message}", e)
             ""
         }
     }

@@ -12,6 +12,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
+import com.bdavidgm.consumoelectrico.Navigation.AppNavigation
 import com.bdavidgm.consumoelectrico.ui.theme.ConsumoelectricoTheme
 import com.bdavidgm.consumoelectrico.viewmodels.ConsumoViewModel
 import com.bdavidgm.consumoelectrico.viewmodels.SettingsViewModel
@@ -29,9 +30,10 @@ class MainActivity : ComponentActivity() {
             ConsumoelectricoTheme {
                val st : SettingsViewModel by viewModels()
                val cvm : ConsumoViewModel by viewModels()
+                AppNavigation(cvm,st)
                //SettingsScreen(st)
                 //ConsumoView(cvm, st)
-                ConsumoScreen(cvm, st)
+               // ConsumoScreen(cvm, st)
 
             }
         }

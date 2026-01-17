@@ -28,7 +28,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SegmentedButtonDefaults.Icon
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
@@ -53,21 +52,22 @@ import com.bdavidgm.consumoelectrico.datastore.ViewMode
 import com.bdavidgm.consumoelectrico.viewmodels.SettingsViewModel
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.ArrowBack // <-- NUEVO ICONO
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(
-    viewModel: SettingsViewModel
-)
- {
+    viewModel: SettingsViewModel,
+    onNavigateBack: () -> Unit // <-- NUEVO PARÁMETRO PARA REGRESAR
+) {
     val uiState by viewModel.uiState.collectAsState()
     val newEmailInput by viewModel.newEmailInput.collectAsState()
     val senderEmailInput by viewModel.senderEmailInput.collectAsState()
     val senderPasswordInput by viewModel.senderPasswordInput.collectAsState()
 
-    val snackbarHostState = remember{ SnackbarHostState() }
+    val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
 
     // Manejar Snackbars
@@ -81,7 +81,15 @@ fun SettingsScreen(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
-                title = { Text("Configuración de Reportes") }
+                title = { Text("Configuración de Reportes") },
+                navigationIcon = { // <-- BOTÓN DE REGRESO
+                    IconButton(onClick = onNavigateBack) {
+                        Icon(
+                            Icons.Default.ArrowBack,
+                            contentDescription = "Regresar"
+                        )
+                    }
+                }
             )
         }
     ) { paddingValues ->
@@ -112,6 +120,9 @@ fun SettingsScreen(
         }
     }
 }
+
+// ... el resto del código de SettingsContent permanece igual
+// (ViewModeSelector, ViewModeOption, EmailItem)
 
 @Composable
 private fun SettingsContent(

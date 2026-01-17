@@ -18,6 +18,8 @@ hiltver = "2.57.2"
 datastoreCore = "1.2.0"
 datastorePreferencesCore = "1.2.0"
 foundation = "1.10.0"
+navigationCompose = "2.9.6"
+runtimeVersion = "1.10.0"
 
 
 
@@ -43,6 +45,8 @@ material3 = { group = "androidx.compose.material3", name = "material3", version.
 androidx-datastore-core = { group = "androidx.datastore", name = "datastore-core", version.ref = "datastoreCore" }
 androidx-datastore-preferences-core = { group = "androidx.datastore", name = "datastore-preferences-core", version.ref = "datastorePreferencesCore" }
 androidx-foundation = { group = "androidx.compose.foundation", name = "foundation", version.ref = "foundation" }
+androidx-navigation-compose = { group = "androidx.navigation", name = "navigation-compose", version.ref = "navigationCompose" }
+runtime = { group = "androidx.compose.runtime", name = "runtime", version.ref = "runtimeVersion" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
