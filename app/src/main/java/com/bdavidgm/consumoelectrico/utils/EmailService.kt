@@ -41,30 +41,50 @@ object EmailService {
 
         val gmailProps = Properties().apply {
             put("mail.smtp.auth", "true")
-            put("mail.smtp.starttls.enable", "true")
-            put("mail.smtp.starttls.required", "true")
             put("mail.smtp.host", "smtp.gmail.com")
             put("mail.smtp.port", "587")
-           // put("mail.smtp.port", "25")
-            put("mail.smtp.ssl.trust", "smtp.gmail.com")
-            put("mail.smtp.ssl.protocols", "TLSv1.2")
+            put("mail.smtp.starttls.enable", "true")
+            put("mail.smtp.starttls.required", "true")
+            put("mail.smtp.ssl.protocols", "TLSv1.2 TLSv1.3")
             put("mail.smtp.connectiontimeout", "10000")
             put("mail.smtp.timeout", "10000")
             put("mail.smtp.writetimeout", "10000")
-            // Propiedades adicionales para mejor compatibilidad
-            put("mail.smtp.ssl.checkserveridentity", "true")
-            put("mail.smtp.ssl.enable", "false") // STARTTLS usa esto en false
+        }
+
+        val arnacProps = Properties().apply {
+            put("mail.smtp.auth", "false")
+            put("mail.smtp.ssl.enable", "true")
+            put("mail.smtp.host", "smtp.arnac.cu")
+            put("mail.smtp.port", "25")
+            put("mail.smtp.connectiontimeout", "10000000")
+            put("mail.smtp.timeout", "10000000")
+            // si necesita SSL en lugar de STARTTLS:
+            //  put("mail.smtp.port", "465")
         }
         
-        // Detectar tipo de correo: Nauta o Gmail (cualquier dominio que no sea nauta.cu se trata como Gmail)
-        val isNauta = usuario.lowercase().endsWith("@nauta.cu")
-        val props = if (isNauta) nautaProps else gmailProps
+        // Detectar tipo de correo según el dominio
+        val usuarioLower = usuario.lowercase()
+        val props = when {
+            usuarioLower.endsWith("@nauta.cu") -> nautaProps
+            usuarioLower.endsWith("@arnac.cu") -> arnacProps
+            usuarioLower.endsWith("@gmail.com") || usuarioLower.endsWith("@googlemail.com") -> gmailProps
+            else -> gmailProps // Por defecto usa Gmail para otros dominios
+        }
+        
+        val tipoCorreo = when {
+            usuarioLower.endsWith("@nauta.cu") -> "Nauta"
+            usuarioLower.endsWith("@arnac.cu") -> "Arnac"
+            usuarioLower.endsWith("@gmail.com") || usuarioLower.endsWith("@googlemail.com") -> "Gmail"
+            else -> "Gmail (por defecto)"
+        }
         
         // Log de configuración usada
         Log.d("EmailService", "Configuración SMTP:")
+        Log.d("EmailService", "  Tipo: $tipoCorreo")
         Log.d("EmailService", "  Host: ${props.getProperty("mail.smtp.host")}")
         Log.d("EmailService", "  Port: ${props.getProperty("mail.smtp.port")}")
         Log.d("EmailService", "  STARTTLS: ${props.getProperty("mail.smtp.starttls.enable")}")
+        Log.d("EmailService", "  SSL: ${props.getProperty("mail.smtp.ssl.enable")}")
         Log.d("EmailService", "  Auth: ${props.getProperty("mail.smtp.auth")}")
 
         val session = Session.getInstance(props, object : Authenticator() {
@@ -89,7 +109,7 @@ object EmailService {
             try {
                 Log.d("EmailService", "Intentando enviar correo desde: $usuario")
                 Log.d("EmailService", "Destinatario: $destinatario")
-                Log.d("EmailService", "Usando configuración: ${if (usuario.endsWith("@nauta.cu")) "Nauta" else "Gmail"}")
+                Log.d("EmailService", "Usando configuración: $tipoCorreo")
                 
                 Transport.send(message)
                 Log.i("EmailService", "Correo enviado correctamente")
@@ -140,26 +160,47 @@ object EmailService {
 
         val gmailProps = Properties().apply {
             put("mail.smtp.auth", "true")
+            put("mail.smtp.host", "smtp.gmail.com")
+            put("mail.smtp.port", "587")
             put("mail.smtp.starttls.enable", "true")
             put("mail.smtp.starttls.required", "true")
-            put("mail.smtp.host", "smtp.gmail.com")
-           // put("mail.smtp.port", "587")
-            put("mail.smtp.port", "25")
-            put("mail.smtp.ssl.trust", "smtp.gmail.com")
-            put("mail.smtp.ssl.protocols", "TLSv1.2")
+            put("mail.smtp.ssl.protocols", "TLSv1.2 TLSv1.3")
             put("mail.smtp.connectiontimeout", "10000")
             put("mail.smtp.timeout", "10000")
             put("mail.smtp.writetimeout", "10000")
-            put("mail.smtp.ssl.checkserveridentity", "true")
-            put("mail.smtp.ssl.enable", "false")
+        }
+
+        val arnacProps = Properties().apply {
+            put("mail.smtp.auth", "true")
+            put("mail.smtp.ssl.enable", "true")
+            put("mail.smtp.host", "smtp.arnac.cu")
+            put("mail.smtp.port", "25")
+            put("mail.smtp.connectiontimeout", "10000000")
+            put("mail.smtp.timeout", "10000000")
         }
         
-        val isNauta = usuario.lowercase().endsWith("@nauta.cu")
-        val props = if (isNauta) nautaProps else gmailProps
+        // Detectar tipo de correo según el dominio
+        val usuarioLower = usuario.lowercase()
+        val props = when {
+            usuarioLower.endsWith("@nauta.cu") -> nautaProps
+            usuarioLower.endsWith("@arnac.cu") -> arnacProps
+            usuarioLower.endsWith("@gmail.com") || usuarioLower.endsWith("@googlemail.com") -> gmailProps
+            else -> gmailProps // Por defecto usa Gmail para otros dominios
+        }
+        
+        val tipoCorreo = when {
+            usuarioLower.endsWith("@nauta.cu") -> "Nauta"
+            usuarioLower.endsWith("@arnac.cu") -> "Arnac"
+            usuarioLower.endsWith("@gmail.com") || usuarioLower.endsWith("@googlemail.com") -> "Gmail"
+            else -> "Gmail (por defecto)"
+        }
         
         Log.d("EmailService", "Configuración SMTP (HTML):")
+        Log.d("EmailService", "  Tipo: $tipoCorreo")
         Log.d("EmailService", "  Host: ${props.getProperty("mail.smtp.host")}")
         Log.d("EmailService", "  Port: ${props.getProperty("mail.smtp.port")}")
+        Log.d("EmailService", "  STARTTLS: ${props.getProperty("mail.smtp.starttls.enable")}")
+        Log.d("EmailService", "  SSL: ${props.getProperty("mail.smtp.ssl.enable")}")
 
         val session = Session.getInstance(props, object : Authenticator() {
             override fun getPasswordAuthentication(): PasswordAuthentication {
@@ -199,7 +240,7 @@ object EmailService {
             try {
                 Log.d("EmailService", "Intentando enviar correo HTML desde: $usuario")
                 Log.d("EmailService", "Destinatario: $destinatario")
-                Log.d("EmailService", "Usando configuración: ${if (isNauta) "Nauta" else "Gmail"}")
+                Log.d("EmailService", "Usando configuración: $tipoCorreo")
                 
                 Transport.send(message)
                 Log.i("EmailService", "Correo HTML enviado correctamente")

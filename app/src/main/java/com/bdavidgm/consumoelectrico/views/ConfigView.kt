@@ -44,6 +44,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
@@ -52,7 +53,9 @@ import com.bdavidgm.consumoelectrico.datastore.ViewMode
 import com.bdavidgm.consumoelectrico.viewmodels.SettingsViewModel
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.ArrowBack // <-- NUEVO ICONO
+import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 
@@ -66,6 +69,7 @@ fun SettingsScreen(
     val newEmailInput by viewModel.newEmailInput.collectAsState()
     val senderEmailInput by viewModel.senderEmailInput.collectAsState()
     val senderPasswordInput by viewModel.senderPasswordInput.collectAsState()
+    val showInputPassword by viewModel.showInputPassword.collectAsState()
 
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
@@ -108,9 +112,11 @@ fun SettingsScreen(
                 newEmailInput = newEmailInput,
                 senderEmailInput = senderEmailInput,
                 senderPasswordInput = senderPasswordInput,
+                showInputPassword = showInputPassword,
                 onNewEmailInputChanged = viewModel::onNewEmailInputChanged,
                 onSenderEmailInputChanged = viewModel::onSenderEmailInputChanged,
                 onSenderPasswordInputChanged = viewModel::onSenderPasswordInputChanged,
+                onToggleInputPasswordVisibility = viewModel::toggleInputPasswordVisibility,
                 onAddReportEmail = viewModel::addReportEmail,
                 onRemoveReportEmail = viewModel::removeReportEmail,
                 onSaveSenderCredentials = viewModel::saveSenderCredentials,
@@ -130,9 +136,11 @@ private fun SettingsContent(
     newEmailInput: String,
     senderEmailInput: String,
     senderPasswordInput: String,
+    showInputPassword: Boolean,
     onNewEmailInputChanged: (String) -> Unit,
     onSenderEmailInputChanged: (String) -> Unit,
     onSenderPasswordInputChanged: (String) -> Unit,
+    onToggleInputPasswordVisibility: () -> Unit,
     onAddReportEmail: () -> Unit,
     onRemoveReportEmail: (String) -> Unit,
     onSaveSenderCredentials: () -> Unit,
@@ -231,7 +239,15 @@ private fun SettingsContent(
             modifier = Modifier.fillMaxWidth(),
             placeholder = { Text("Contraseña (se guardará encriptada)") },
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-            visualTransformation = PasswordVisualTransformation(),
+            visualTransformation = if (showInputPassword) VisualTransformation.None else PasswordVisualTransformation(),
+            trailingIcon = {
+                IconButton(onClick = onToggleInputPasswordVisibility) {
+                    Icon(
+                        imageVector = if (showInputPassword) Icons.Default.VisibilityOff else Icons.Default.Visibility,
+                        contentDescription = if (showInputPassword) "Ocultar contraseña" else "Mostrar contraseña"
+                    )
+                }
+            },
             singleLine = true
         )
 
