@@ -69,12 +69,25 @@ class ConsumoViewModel @Inject constructor(
     }
 
     private fun actualizarColumnas(consumos: List<Consumo>) {
-        val nuevasColumnas = consumos.sortedBy { it.fechaCreacion }.map { consumo ->
+        val consumosOrdenados = consumos.sortedBy { it.fechaCreacion }
+        var acumuladoAcumulativo = 0.0
+        
+        val nuevasColumnas = consumosOrdenados.mapIndexed { index, consumo ->
+            // La primera entrada siempre tiene consumo y acumulado 0
+            val consumoDiario = if (index == 0) 0.0 else consumo.diario
+            
+            // Calcular acumulado como suma progresiva comenzando desde 0
+            if (index == 0) {
+                acumuladoAcumulativo = 0.0
+            } else {
+                acumuladoAcumulativo += consumoDiario
+            }
+            
             listOf(
                 "${consumo.dia}/${consumo.mes}/${consumo.anio}",
                 String.format(Locale.getDefault(), "%.2f", consumo.lectura),
-                String.format(Locale.getDefault(), "%.2f", consumo.diario),
-                String.format(Locale.getDefault(), "%.2f", consumo.mensual)
+                String.format(Locale.getDefault(), "%.2f", consumoDiario),
+                String.format(Locale.getDefault(), "%.2f", acumuladoAcumulativo)
             )
         }
         _columns.value = nuevasColumnas
