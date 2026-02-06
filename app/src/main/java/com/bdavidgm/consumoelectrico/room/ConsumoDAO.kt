@@ -9,6 +9,9 @@ interface ConsumoDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(consumo: Consumo)
 
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertAll(consumos: List<Consumo>)
+
     @Update
     suspend fun update(consumo: Consumo)
 

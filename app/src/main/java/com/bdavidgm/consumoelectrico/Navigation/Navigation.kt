@@ -10,11 +10,13 @@ import com.bdavidgm.consumoelectrico.viewmodels.ConsumoViewModel
 import com.bdavidgm.consumoelectrico.viewmodels.SettingsViewModel
 import com.bdavidgm.consumoelectrico.views.ConsumoScreen
 import com.bdavidgm.consumoelectrico.views.SettingsScreen
+import com.bdavidgm.consumoelectrico.views.ChartsScreen
 
 // Definición de las rutas de navegación
 sealed class Screen(val route: String) {
     object Main : Screen("main_screen")
     object Settings : Screen("settings_screen")
+    object Charts : Screen("charts_screen")
 }
 
 @Composable
@@ -32,6 +34,9 @@ fun AppNavigation(consumoViewModel:ConsumoViewModel,settingsViewModel:SettingsVi
                 settingsViewModel,
                 onNavigateToSettings = {
                     navController.navigate(Screen.Settings.route)
+                },
+                onNavigateToCharts = {
+                    navController.navigate(Screen.Charts.route)
                 }
             )
         }
@@ -40,6 +45,16 @@ fun AppNavigation(consumoViewModel:ConsumoViewModel,settingsViewModel:SettingsVi
         composable(Screen.Settings.route) {
             SettingsScreen(
                 viewModel = settingsViewModel,
+                onNavigateBack = {
+                    navController.popBackStack()
+                }
+            )
+        }
+
+        // Pantalla de gráficos
+        composable(Screen.Charts.route) {
+            ChartsScreen(
+                consumoViewModel = consumoViewModel,
                 onNavigateBack = {
                     navController.popBackStack()
                 }

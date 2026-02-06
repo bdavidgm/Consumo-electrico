@@ -9,6 +9,7 @@ import javax.inject.Inject
 
 class ConsumoRepository @Inject constructor(private val consumoDao: ConsumoDao) {
     suspend fun insertConsumo(consumo: Consumo) = consumoDao.insert(consumo)
+    suspend fun insertAllConsumos(consumos: List<Consumo>) = consumoDao.insertAll(consumos)
     suspend fun updateConsumo(consumo: Consumo) = consumoDao.update(consumo)
     suspend fun deleteConsumo(consumo: Consumo) = consumoDao.delete(consumo)
     suspend fun deleteAll() = consumoDao.deleteAll()

@@ -14,9 +14,12 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.time.DayOfWeek
 import java.time.LocalDate
+import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.*
+import kotlin.random.Random
 import javax.inject.Inject
 
 @HiltViewModel
@@ -390,6 +393,130 @@ class ConsumoViewModel @Inject constructor(
                         android.widget.Toast.LENGTH_LONG
                     ).show()
                 }
+            }
+        }
+    }
+
+    /** Primera letra de cada día de la semana en español (L, M, X, J, V, S, D). X = Miércoles. */
+    private val letrasDiaSemana = listOf("L", "M", "X", "J", "V", "S", "D")
+
+    /** Tres primeras letras de cada mes en español. */
+    private val nombresMeses = listOf("Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic")
+
+    /**
+     * Obtiene datos formateados para el gráfico según el período seleccionado.
+     * - SEMANAL: promedio de consumo por día de la semana (todos los lunes promediados, etc.).
+     * - MENSUAL: promedio de consumo por mes del año (todo enero promediado, etc.).
+     * - ANUAL: consumo total por año (varios años).
+     */
+    suspend fun obtenerDatosParaGrafico(periodType: String): List<Pair<String, Double>> {
+        return withContext(Dispatchers.IO) {
+            val todosLosConsumos = repository.getAll().first()
+
+            when (periodType) {
+                "SEMANAL" -> {
+                    // Agrupar por día de la semana (1=Lunes .. 7=Domingo), promediar el consumo diario
+                    val porDiaSemana = todosLosConsumos
+                        .filter { it.diario >= 0 }
+                        .groupBy { c ->
+                            LocalDate.of(c.anio.toInt(), c.mes.toInt(), c.dia.toInt()).dayOfWeek
+                        }
+                    (1..7).map { dayOfWeekValue ->
+                        val dayOfWeek = DayOfWeek.of(dayOfWeekValue)
+                        val consumosDelDia = porDiaSemana[dayOfWeek].orEmpty()
+                        val promedio = if (consumosDelDia.isEmpty()) 0.0
+                        else consumosDelDia.map { it.diario }.average()
+                        Pair(letrasDiaSemana[dayOfWeekValue - 1], promedio)
+                    }
+                }
+                "MENSUAL" -> {
+                    // Agrupar por mes (1-12), promediar el consumo diario de ese mes
+                    val porMes = todosLosConsumos
+                        .filter { it.diario >= 0 }
+                        .groupBy { it.mes }
+                    (1L..12L).map { mes ->
+                        val consumosDelMes = porMes[mes].orEmpty()
+                        val promedio = if (consumosDelMes.isEmpty()) 0.0
+                        else consumosDelMes.map { it.diario }.average()
+                        Pair(nombresMeses[mes.toInt() - 1], promedio)
+                    }
+                }
+                "ANUAL" -> {
+                    // Agrupar por año: consumo total (suma de diario) por año, varios años
+                    val porAnio = todosLosConsumos
+                        .filter { it.diario >= 0 }
+                        .groupBy { it.anio }
+                        .mapValues { (_, list) -> list.sumOf { it.diario } }
+                    porAnio.keys.sorted().map { anio ->
+                        Pair(anio.toString(), porAnio[anio] ?: 0.0)
+                    }
+                }
+                else -> {
+                    // Por defecto: vista mensual (promedio por mes)
+                    val porMes = todosLosConsumos.filter { it.diario >= 0 }.groupBy { it.mes }
+                    (1L..12L).map { mes ->
+                        val consumosDelMes = porMes[mes].orEmpty()
+                        val promedio = if (consumosDelMes.isEmpty()) 0.0
+                        else consumosDelMes.map { it.diario }.average()
+                        Pair(nombresMeses[mes.toInt() - 1], promedio)
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * Genera datos de prueba: 3 años de lecturas diarias simuladas (consumo entre 8 y 14 kWh/día).
+     * Útil para probar los gráficos semanal, mensual y anual.
+     * @return Mensaje de éxito con cantidad de días insertados o mensaje de error.
+     */
+    suspend fun generarDatosDePrueba3Anios(): String {
+        return withContext(Dispatchers.IO) {
+            try {
+                val hoy = LocalDate.now()
+                val inicio = hoy.minusYears(3)
+                val random = Random(42)
+                val consumos = mutableListOf<Consumo>()
+                var lecturaAcumulada = 0.0
+                var mensualAcumulado = 0.0
+                var mesActual = -1L
+                var anioActual = -1L
+
+                var fecha = inicio
+                while (!fecha.isAfter(hoy)) {
+                    val dia = fecha.dayOfMonth.toLong()
+                    val mes = fecha.monthValue.toLong()
+                    val anio = fecha.year.toLong()
+
+                    if (mes != mesActual || anio != anioActual) {
+                        mensualAcumulado = 0.0
+                        mesActual = mes
+                        anioActual = anio
+                    }
+
+                    val diario = 8.0 + random.nextDouble() * 6.0 // entre 8 y 14 kWh
+                    lecturaAcumulada += diario
+                    mensualAcumulado += diario
+
+                    val inicioDelDia = fecha.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
+                    consumos.add(
+                        Consumo(
+                            dia = dia,
+                            mes = mes,
+                            anio = anio,
+                            lectura = lecturaAcumulada,
+                            diario = diario,
+                            mensual = mensualAcumulado,
+                            fechaCreacion = inicioDelDia
+                        )
+                    )
+                    fecha = fecha.plusDays(1)
+                }
+
+                repository.insertAllConsumos(consumos)
+                "Se cargaron ${consumos.size} días de datos de prueba (3 años)."
+            } catch (e: Exception) {
+                "Error al cargar datos: ${e.message}"
             }
         }
     }

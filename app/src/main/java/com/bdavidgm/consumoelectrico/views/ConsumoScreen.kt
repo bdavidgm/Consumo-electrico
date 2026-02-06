@@ -10,7 +10,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material.icons.filled.Settings // <-- NUEVO ICONO
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -32,7 +33,8 @@ import kotlinx.coroutines.launch
 fun ConsumoScreen(
     consumoViewModel: ConsumoViewModel,
     settingsViewModel: SettingsViewModel,
-    onNavigateToSettings: () -> Unit // <-- NUEVO PARÁMETRO
+    onNavigateToSettings: () -> Unit,
+    onNavigateToCharts: () -> Unit
 ) {
     var lecturaInput by remember { mutableStateOf("") }
     var showMonth by remember { mutableStateOf(true) }
@@ -84,11 +86,25 @@ fun ConsumoScreen(
                 fontWeight = FontWeight.SemiBold
             )
 
-            // Botones a la derecha: Configuración y Ayuda
+            // Botones a la derecha: Gráficos, Configuración y Ayuda
             Row {
-                // Botón de configuración (NUEVO)
+                // Botón de gráficos
                 IconButton(
-                    onClick = onNavigateToSettings, // <-- Navega a Settings
+                    onClick = onNavigateToCharts,
+                    modifier = Modifier.size(24.dp)
+                ) {
+                    Icon(
+                        Icons.Default.BarChart,
+                        contentDescription = "Gráficos",
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+
+                Spacer(modifier = Modifier.width(4.dp))
+
+                // Botón de configuración
+                IconButton(
+                    onClick = onNavigateToSettings,
                     modifier = Modifier.size(24.dp)
                 ) {
                     Icon(
