@@ -6,6 +6,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -48,6 +49,7 @@ fun ChartsScreen(
     var chartData by remember { mutableStateOf<List<Pair<String, Double>>>(emptyList()) }
     val coroutineScope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
+    var showInfoDialog by remember { mutableStateOf(false) }
 
     fun cargarDatosGrafico() {
         coroutineScope.launch(Dispatchers.IO) {
@@ -68,10 +70,60 @@ fun ChartsScreen(
                     IconButton(onClick = onNavigateBack) {
                         Icon(Icons.Default.ArrowBack, contentDescription = "Regresar")
                     }
+                },
+                actions = {
+                    IconButton(onClick = { showInfoDialog = true }) {
+                        Icon(
+                            Icons.Default.Info,
+                            contentDescription = "Información del gráfico"
+                        )
+                    }
                 }
             )
         }
     ) { paddingValues ->
+        if (showInfoDialog) {
+            AlertDialog(
+                onDismissRequest = { showInfoDialog = false },
+                title = { Text("Qué muestra el gráfico") },
+                text = {
+                    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        Text(
+                            text = "Semanal",
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Text(
+                            text = "Consumo promedio de cada día de la semana (L=Lunes, M=Martes, X=Miércoles, J=Jueves, V=Viernes, S=Sábado, D=Domingo). Se promedian todos los lunes, todos los martes, etc., para ver en qué día se consume más.",
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                        Text(
+                            text = "Mensual",
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Text(
+                            text = "Consumo promedio de cada mes del año (Ene, Feb, Mar…). Se promedia todo el consumo de enero, de febrero, etc.",
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                        Text(
+                            text = "Anual",
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Text(
+                            text = "Consumo total de cada año (suma de todo el consumo del año).",
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                    }
+                },
+                confirmButton = {
+                    TextButton(onClick = { showInfoDialog = false }) {
+                        Text("Entendido")
+                    }
+                }
+            )
+        }
         Column(
             modifier = Modifier
                 .fillMaxSize()
